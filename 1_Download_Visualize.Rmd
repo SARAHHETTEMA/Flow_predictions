@@ -7,6 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 library(tidyverse)
+library(GGally)
 
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -76,9 +77,69 @@ hydro <- read_delim('data/hydro.txt', delim = ';')
 
 ## Initial data viz
 
+
+### Baseflow 
+
+
 ```{r}
 
+ggplot(hydro, aes(x = baseflow_index,
+                  y = q95)) + 
+  geom_point()
+
+
 ```
+
+
+Baseflow doesn't strongly control Q95 in a predictable way. 
+
+
+
+### Climate controls
+
+
+```{r}
+
+cq <- inner_join(climate, hydro %>%
+                   select(gauge_id, q95))
+
+
+
+ggplot(cq, aes(x = p_mean, y = q95)) + 
+  geom_point() + 
+  geom_smooth(method = 'lm', se = F)
+
+p_mean_mod <- lm(q95 ~ p_mean, data = cq)
+
+```
+
+
+#### All at once
+
+```{r}
+
+png(filename = 'bigclimeplot.png', width = 10, height = 8, units = 'in', res = 300)
+cq %>%
+  select_if(is.numeric) %>%
+  ggpairs()
+dev.off()
+
+
+long_cq <- cq %>%
+  select_if(is.numeric) %>%
+  pivot_longer(cols = p_mean:low_prec_dur,
+               values_to = 'value',
+               names_to = 'driver')
+
+ggplot(long_cq, aes(value,
+                    q95)) +
+  geom_point() +
+  facet_grid(~driver,
+             scales = 'free')
+```
+
+The average precip (p_mean) controls 71% of the variation in 195, where every 1 mm/day increase in long-term average precip increases the q95 by 2.95 mm/day. 
+
 
 # Assignment
 
