@@ -1,0 +1,69 @@
+---
+title: "Modelling Flow"
+author: "Matthew Ross"
+date: "2024-04-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+library(tidyverse)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Modelling Flow
+
+Now that we have explored individual correlations between long-term flow 
+characteristics and potential drivers of those characteristics (climate,
+soils, etc...), we can start to build out increasingly complex models
+to predict flow characteristics. 
+
+# Assignment
+
+
+## Build a parsimonious linear model
+
+Pick one of the flow characteristics that mosts interests you and use the `lm`
+function to build a parsimonious model that predicts your favorite characteristic. What is parsimony? It's a model that is complex enough to
+capture the major controls, but simple enough to be understandable. You
+will need to explore, read, understand the differences between a + sign interaction, a ":" interaction and a * interaction in `lm` terminology. 
+
+Please report your R2, slope estimates, and p-value of your model and 
+write out your interpretation of these numbers. 
+
+```{r}
+
+```
+
+
+## Build a CART model to predict flow. 
+
+Linear models help us both predict and understand drivers of change, machine learning can help us understand drivers of change, but as a technique it is 
+more suited to accurate predictions. CART or Classification and Regression Trees
+are a nice intermediate between lms and ml. Tons of resources for this but
+[CART Logic](https://koalaverse.github.io/machine-learning-in-R/decision-trees.html#cart-software-in-r), provides a good conceptual overview, and [CART demo](https://www.statmethods.net/advstats/cart.html) provides a good enough code demo. 
+
+Read the logic intro above, and the code demo as well, to build a CART model 
+version of your lm. Use the code to visualize your CART output. 
+
+```{r}
+
+```
+
+
+## Build a RandomForest
+
+CARTs are a single tree, what if we had thousands? Would we get better performance (yes!)
+
+The same CART logic site above introduces random forests as well. Please 
+read this part of the site and use the code demo to build your own RandomForest.
+Remember, for a RandomForest type model we want to make sure we split our data
+at least into train and test datasets and ideally into train-test-val. 
+
+
+
+
+```{r}
+
+```
+
