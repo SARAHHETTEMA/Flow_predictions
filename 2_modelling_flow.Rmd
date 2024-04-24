@@ -8,6 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 
 library(tidyverse)
+library(GGally)
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -32,10 +33,46 @@ Please report your R2, slope estimates, and p-value of your model and
 write out your interpretation of these numbers. 
 
 ```{r}
+# Prep Data 
+dat_files <- list.files('data',
+                        full.names = T)
+
+
+
+climate <- read_delim(dat_files[1], delim = ';')
+
+hydro <- read_delim('data/hydro.txt', delim = ';')
+
+cq <- inner_join(climate, hydro %>%
+                   select(gauge_id, q95))
+
+# Select only continuous climate variables 
+cq2 <- cq %>% select(-c(gauge_id, high_prec_timing, low_prec_timing))
+## Selected two variables that were correlated to q95. 
+
+# Look at Correlation matrix
+ggpairs(cq2)
+
+# Create additive linear model 
+mod1 <- lm(q95 ~ p_mean + low_prec_freq, data = cq2)
+summary(mod1)
+
+# Create interaction linear model 
+mod2 <- lm(q95 ~ p_mean * low_prec_freq, data = cq2)
+summary(mod2)
 
 ```
 
+## Interpretation of Results   
+The coefficient of 6.566 for precipitation mean suggests that for every one-unit increase in precipitation mean, the value of 195 increases by 6.566 units, when low precipitation frequency is held constant at 0. This effect is statistically significant (p < 2e-16).
 
+The coefficient of 0.026 for low precipitation frequency indicates that for every one-unit increase in low precipitation frequency, the value of 195 increases by 0.026 units, when precipitation is held constant at 0. This effect is also statistically significant (p = 8.77e-07).
+
+The negative coefficient of -0.018 for the interaction term p_mean:low_prec_freq suggests that the effect of precipitation mean on 195 decreases as low_prec_freq increases. This interaction effect is statistically significant (p < 2e-16).
+
+The R-squared value of 0.7779 indicates that approximately 77.79% of the variation in 195 is explained by the predictors and their interaction.
+
+ 
 ## Build a CART model to predict flow. 
 
 Linear models help us both predict and understand drivers of change, machine learning can help us understand drivers of change, but as a technique it is 
