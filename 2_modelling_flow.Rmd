@@ -6,7 +6,6 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-
 library(tidyverse)
 library(GGally)
 knitr::opts_chunk$set(echo = TRUE)
@@ -72,6 +71,21 @@ The negative coefficient of -0.018 for the interaction term p_mean:low_prec_freq
 
 The R-squared value of 0.7779 indicates that approximately 77.79% of the variation in 195 is explained by the predictors and their interaction.
 
+```{r}
+q_mean <- read_delim('data/hydro.txt', delim = ';') %>%
+  select(gauge_id, q_mean) %>%
+  inner_join(read_delim('data/climate.txt', delim = ';')) %>%
+  inner_join(read_delim('data/soil.txt',delim = ';'))
+
+
+q_mean_logs <- q_mean %>%
+  mutate(p_log10 = log10(p_mean),
+         aridlog10 = log10(aridity),
+         q_mean10 = log10(q_mean))
+
+naive_mod <- lm(q_mean10 ~ aridlog10 * p_log10, data = q_mean_logs)
+```
+
  
 ## Build a CART model to predict flow. 
 
@@ -84,7 +98,38 @@ Read the logic intro above, and the code demo as well, to build a CART model
 version of your lm. Use the code to visualize your CART output. 
 
 ```{r}
+library(rpart)
+library(rpart.plot)
+library(yardstick)
 
+set.seed(22157)
+q_4 <- q_mean_logs %>%
+  select(q_mean10, p_log10, aridlog10, soil_depth_pelletier, max_water_content, organic_frac, frac_snow,pet_mean) %>%
+  mutate(q_class = cut_number(q_mean10,n = 4)) %>%
+  select(-q_mean10) %>%
+  na.omit()
+
+train <- q_4 %>%
+  sample_frac(.7)
+
+test <- q_4 %>%
+  anti_join(train)
+
+cart_simple <- rpart(q_class ~., data = train, cp = 0.01,
+                     method = 'class')
+
+
+plot(cart_simple)
+text(cart_simple, cex = 0.8, use.n = TRUE, xpd = TRUE)
+
+
+test$pred <- predict(cart_simple, test, 'class')
+cm <- conf_mat(test, q_class,pred)
+
+autoplot(cm, type = "heatmap") +
+  scale_fill_gradient(low="#D6EAF8",high = "#2E86C1")
+
+accuracy(test,q_class,pred)
 ```
 
 
@@ -98,9 +143,55 @@ Remember, for a RandomForest type model we want to make sure we split our data
 at least into train and test datasets and ideally into train-test-val. 
 
 
-
-
 ```{r}
+library(randomForest)
+summary(train)
+rf_class <- randomForest(q_class ~ ., data = train, 
+                         maxnodes = 9, 
+                         nPerm = 2,
+                         mtry = 5,
+                         importance = T)
+
+test$rf_pred <- predict(rf_class, test)
+
+cm_rf <- conf_mat(test, q_class,rf_pred)
+
+autoplot(cm_rf, type = "heatmap") +
+  scale_fill_gradient(low="#D6EAF8",high = "#2E86C1")
+
+accuracy(test,q_class,rf_pred)
+
+q_rf <- q_mean_logs %>%
+  select(q_mean10, p_log10, aridlog10, soil_depth_pelletier,  frac_snow,pet_mean) %>%
+  na.omit()
+
+train_cont <- q_rf %>%
+  sample_frac(.7)
+
+test_cont <- q_rf %>%
+  anti_join(train)
+
+
+rf_numer <- randomForest(q_mean10 ~ ., data = train_cont, 
+                         maxnodes = 50, 
+                         nPerm = 5,
+                         mtry = 8,
+                         importance = T)
+
+rf_numer$importance
+
+test_cont$rf_pred <- predict(rf_numer, test_cont)
+train_cont$rf_pred <- predict(rf_numer, train_cont)
+
+
+ggplot(test_cont, aes(x = q_mean10,
+                      y = rf_pred)) + 
+  geom_point() + 
+  geom_abline(slope = 1)
+
+
+cor(test_cont$rf_pred,test_cont$q_mean10)^2
+cor(train_cont$rf_pred,train_cont$q_mean10)^2
 
 ```
 
